@@ -1,0 +1,28 @@
+# settings.toml: Configuration for the documentation mirror
+
+# Discovery entry points
+seeds = [
+    "https://cloud.google.com/YOUR_PRODUCT",
+    "https://cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT"
+]
+
+# Path prefixes to mirror
+# Include both web documentation and gcloud CLI reference
+prefixes = [
+    "/YOUR_PRODUCT/",
+    "/sdk/gcloud/reference/YOUR_PRODUCT/",
+    "/sdk/gcloud/reference/alpha/YOUR_PRODUCT/",
+    "/sdk/gcloud/reference/beta/YOUR_PRODUCT/"
+]
+
+# Sitemap URL(s) to discover links
+# sitemaps = ["https://cloud.google.com/sitemap.xml"]
+
+# Recursive discovery from Markdown content
+recursive = true
+
+# Rate limiting: requests per minute (default: 50.0)
+# qpm = 50.0
+
+# Wait duration when quota is exceeded (default: 1m10s)
+# qw = "1m10s"

@@ -1,0 +1,40 @@
+name: Update Documentation Mirror
+
+on:
+  schedule:
+    # Runs at 18:00 UTC every day (03:00 JST)
+    # IMPORTANT: Coordinate this schedule with other mirrors sharing the same API key 
+    # to avoid simultaneous runs that exhaust your quota.
+    - cron: '0 18 * * *'
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+permissions:
+  contents: write # Required to push changes back to the repository
+
+jobs:
+  update-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Get current date
+        run: echo "TODAY=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Run mirror script
+        env:
+          DEVELOPERKNOWLEDGE_API_KEY: ${{ secrets.DEVELOPERKNOWLEDGE_API_KEY }}
+        run: |
+          chmod +x mirror.sh
+          ./mirror.sh
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update ${{ env.TODAY }} [skip ci]"
+          file_pattern: 'docs/ metadata.yaml logs/'
