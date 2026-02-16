@@ -12,6 +12,8 @@ permissions:
 jobs:
   update-mirror:
     runs-on: ubuntu-latest
+    env:
+      TOOL_VERSION: v0.2.5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,12 +25,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Extract version from mirror.sh (defaults to v0.2.5 if not found)
-          VERSION=$(grep -oE 'VERSION=\$\{1:-v[0-9.]+\}' mirror.sh | cut -d- -f2 | tr -d '}')
-          [ -z "$VERSION" ] && VERSION="v0.2.5"
-          
-          echo "Downloading $VERSION for linux-amd64..."
-          gh release download "$VERSION" \
+          echo "Downloading ${{ env.TOOL_VERSION }} for linux-amd64..."
+          gh release download "${{ env.TOOL_VERSION }}" \
             --repo apstndb/gcp-docs-mirror-tools \
             --pattern "*linux-amd64.tar.gz" \
             --output tool.tar.gz
@@ -42,7 +40,7 @@ jobs:
           DEVELOPERKNOWLEDGE_API_KEY: ${{ secrets.DEVELOPERKNOWLEDGE_API_KEY }}
         run: |
           chmod +x mirror.sh
-          ./mirror.sh
+          ./mirror.sh "${{ env.TOOL_VERSION }}"
 
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5

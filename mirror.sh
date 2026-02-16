@@ -4,7 +4,7 @@
 set -e
 
 # 1. Configuration
-VERSION=${1:-v0.2.5}
+VERSION=${1:-latest}
 MIRROR_TOOL_PKG="github.com/apstndb/gcp-docs-mirror-tools@$VERSION"
 BINARY_NAME="./gcp-docs-mirror-tools"
 
