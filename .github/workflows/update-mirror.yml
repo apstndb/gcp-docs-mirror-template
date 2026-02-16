@@ -3,8 +3,6 @@ name: Update Documentation Mirror
 on:
   schedule:
     # Runs at 18:00 UTC every day (03:00 JST)
-    # IMPORTANT: Coordinate this schedule with other mirrors sharing the same API key 
-    # to avoid simultaneous runs that exhaust your quota.
     - cron: '0 18 * * *'
   workflow_dispatch: # Allows manual triggering from the Actions tab
 
@@ -18,13 +16,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-
       - name: Get current date
         run: echo "TODAY=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Download Mirror Tool Binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Extract version from mirror.sh (defaults to v0.2.3 if not found)
+          VERSION=$(grep -oE 'VERSION=\$\{1:-v[0-9.]+\}' mirror.sh | cut -d- -f2 | tr -d '}')
+          [ -z "$VERSION" ] && VERSION="v0.2.3"
+          
+          echo "Downloading $VERSION for linux-amd64..."
+          gh release download "$VERSION" \
+            --repo apstndb/gcp-docs-mirror-tools \
+            --pattern "*linux-amd64.tar.gz" \
+            --output tool.tar.gz
+          
+          tar -xzf tool.tar.gz
+          chmod +x gcp-docs-mirror-tools
+          rm tool.tar.gz
 
       - name: Run mirror script
         env:

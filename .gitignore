@@ -1,2 +1,5 @@
 tmp/
 .DS_Store
+gcp-docs-mirror-tools
+gcp-docs-mirror-tools.exe
+dist/

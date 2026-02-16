@@ -1,23 +1,29 @@
 #!/bin/bash
-# mirror.sh: Rebuild the entire Spanner documentation mirror using tools from GitHub.
+# mirror.sh: Rebuild the documentation mirror using tools from GitHub.
 
 set -e
 
 # 1. Configuration
-# Allow overriding the version (stable tag, commit hash, or 'latest') via first argument
-VERSION=${1:-v0.2.2}
-MIRROR_TOOL="github.com/apstndb/gcp-docs-mirror-tools@$VERSION"
+VERSION=${1:-v0.2.3}
+MIRROR_TOOL_PKG="github.com/apstndb/gcp-docs-mirror-tools@$VERSION"
+BINARY_NAME="./gcp-docs-mirror-tools"
 
 # 2. Cleanup
-# Ensure a clean state to avoid "ghost files" from deleted documentation.
 echo "--- Cleaning up old mirror state ---"
 rm -rf docs/ logs/ metadata.yaml
 
 # 3. Execution
-echo "--- Starting full Spanner documentation mirror rebuild via go run ($MIRROR_TOOL) ---"
-# Use GOPROXY=direct to ensure we get the absolute latest if requested
-# Pass -config settings.toml to the tool
-GOPROXY=direct go run "$MIRROR_TOOL" -config settings.toml
+# Prefer local binary if it exists
+if [ -f "$BINARY_NAME" ]; then
+    echo "--- Using local binary: $BINARY_NAME ---"
+    chmod +x "$BINARY_NAME"
+    "$BINARY_NAME" -config settings.toml
+else
+    # Fallback to go run
+    echo "--- Binary not found. Falling back to go run ($MIRROR_TOOL_PKG) ---"
+    echo "Note: This may take a while to download and compile."
+    GOPROXY=direct go run "$MIRROR_TOOL_PKG" -config settings.toml
+fi
 
 echo "--- Rebuild complete ---"
 echo "Check metadata.yaml, logs/* for changes."
