@@ -2,7 +2,7 @@
 
 # Discovery entry points
 seeds = [
-    "https://cloud.google.com/YOUR_PRODUCT",
+    "https://cloud.google.com/YOUR_PRODUCT/docs",
     "https://cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT"
 ]
 
