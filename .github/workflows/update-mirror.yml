@@ -23,9 +23,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Extract version from mirror.sh (defaults to v0.2.4 if not found)
+          # Extract version from mirror.sh (defaults to v0.2.5 if not found)
           VERSION=$(grep -oE 'VERSION=\$\{1:-v[0-9.]+\}' mirror.sh | cut -d- -f2 | tr -d '}')
-          [ -z "$VERSION" ] && VERSION="v0.2.4"
+          [ -z "$VERSION" ] && VERSION="v0.2.5"
           
           echo "Downloading $VERSION for linux-amd64..."
           gh release download "$VERSION" \
