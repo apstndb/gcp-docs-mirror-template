@@ -13,7 +13,7 @@ jobs:
   update-mirror:
     runs-on: ubuntu-latest
     env:
-      TOOL_VERSION: v0.2.5
+      TOOL_VERSION: v0.2.6
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
