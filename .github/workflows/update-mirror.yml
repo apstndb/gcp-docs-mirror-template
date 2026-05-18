@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write # Required to push changes back to the repository
+  id-token: write # Required for Google Cloud Workload Identity Federation
 
 jobs:
   update-mirror:
@@ -35,9 +36,20 @@ jobs:
           chmod +x gcp-docs-mirror-tools
           rm tool.tar.gz
 
+      - name: Authenticate to Google Cloud
+        env:
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        if: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != '' }}
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+
       - name: Run mirror script
         env:
-          DEVELOPERKNOWLEDGE_API_KEY: ${{ secrets.DEVELOPERKNOWLEDGE_API_KEY }}
+          # Only pass the API key if WIF is not configured, as the tool prioritizes API keys over ADC/WIF.
+          DEVELOPERKNOWLEDGE_API_KEY: ${{ (secrets.GCP_WORKLOAD_IDENTITY_PROVIDER == '' || secrets.GCP_SERVICE_ACCOUNT == '') && secrets.DEVELOPERKNOWLEDGE_API_KEY || '' }}
         run: |
           chmod +x mirror.sh
           ./mirror.sh "${{ env.TOOL_VERSION }}"

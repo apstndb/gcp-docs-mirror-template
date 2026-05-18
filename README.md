@@ -2,11 +2,64 @@
 
 This repository is a template for creating a local Markdown mirror of official Google Cloud documentation. It is designed to be automatically updated via GitHub Actions.
 
-## API Key Setup
+## Authentication Setup
 
-This tool requires a Google Cloud API Key with access to the **Developer Knowledge API**.
+This tool requires Google Cloud credentials with access to the **Developer Knowledge API**. You can authenticate using either **Workload Identity Federation** (recommended) or an **API Key**.
 
-### 1. Create the API Key
+### Option A: Workload Identity Federation (Secure, Recommended)
+
+Workload Identity Federation (OIDC) is the most secure way to authenticate GitHub Actions to Google Cloud, as it eliminates the need for storing long-lived secrets or keys in GitHub.
+
+#### 1. Configure Google Cloud
+
+Run the following commands using the `gcloud` CLI (or configure them in the Google Cloud Console):
+
+```bash
+# 1. Create a Workload Identity Pool
+gcloud iam workload-identity-pools create "github-pool" \
+    --project="YOUR_PROJECT_ID" \
+    --location="global" \
+    --display-name="GitHub Actions Pool"
+
+# 2. Create an OIDC Identity Provider for GitHub
+gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+    --project="YOUR_PROJECT_ID" \
+    --location="global" \
+    --workload-identity-pool="github-pool" \
+    --display-name="GitHub Actions Provider" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.actor=assertion.actor" \
+    --issuer-uri="https://token.actions.githubusercontent.com"
+
+# 3. Create a Service Account for the mirror tool
+gcloud iam service-accounts create "gcp-docs-mirror-sa" \
+    --project="YOUR_PROJECT_ID" \
+    --display-name="GCP Docs Mirror Service Account"
+
+# 4. Allow your GitHub repository to impersonate the Service Account
+# Replace YOUR_PROJECT_NUMBER, YOUR_GITHUB_ORG, and YOUR_GITHUB_REPO with your actual values
+gcloud iam service-accounts add-iam-policy-binding "gcp-docs-mirror-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+    --project="YOUR_PROJECT_ID" \
+    --role="roles/iam.workloadIdentityUser" \
+    --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_GITHUB_ORG/YOUR_GITHUB_REPO"
+```
+
+> [!NOTE]
+> Ensure that the Service Account has permissions to call the Developer Knowledge API (no special IAM roles are generally required other than basic API enablement in the project, but you may grant standard viewer roles if querying other GCP resources).
+
+#### 2. Configure GitHub Secrets
+
+Add the following repository secrets to your GitHub repository:
+
+*   `GCP_WORKLOAD_IDENTITY_PROVIDER`: The full resource name of your provider:
+    `projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider`
+*   `GCP_SERVICE_ACCOUNT`: The email address of your service account:
+    `gcp-docs-mirror-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com`
+
+---
+
+### Option B: API Key (Simple Setup)
+
+#### 1. Create the API Key
 
 You can create a restricted API key using the `gcloud` CLI:
 
@@ -17,21 +70,23 @@ gcloud services api-keys create \
     --api-target=service=developerknowledge.googleapis.com
 ```
 
-### 2. Configure GitHub Secrets
+#### 2. Configure GitHub Secrets
 
-#### Via Web Interface
+##### Via Web Interface
 1.  Copy the generated API key.
 2.  In your GitHub repository, go to **Settings** -> **Secrets and variables** -> **Actions**.
 3.  Add a **New repository secret**:
     *   Name: `DEVELOPERKNOWLEDGE_API_KEY`
     *   Value: (Your API key)
 
-#### Via GitHub CLI (`gh`)
+##### Via GitHub CLI (`gh`)
 If you have the `gh` CLI installed, you can set the secret directly:
 
 ```bash
 gh secret set DEVELOPERKNOWLEDGE_API_KEY --body "YOUR_API_KEY"
 ```
+
+---
 
 ## Setup Instructions
 
@@ -43,10 +98,7 @@ gh secret set DEVELOPERKNOWLEDGE_API_KEY --body "YOUR_API_KEY"
     *   Edit `.github/workflows/update-mirror.yml`.
     *   **Crucial**: If you are maintaining multiple mirrors with the same API key, **offset the cron schedules** (e.g., `0 1 * * *`, `0 2 * * *`) to avoid simultaneous API requests that could exhaust your quota.
 4.  **Configure GitHub Secrets**:
-    *   Go to `Settings` -> `Secrets and variables` -> `Actions`.
-    *   Add a **New repository secret**:
-        *   Name: `DEVELOPERKNOWLEDGE_API_KEY`
-        *   Value: Your Google Cloud Developer Knowledge API Key.
+    *   Follow either **Option A (Workload Identity Federation)** or **Option B (API Key)** above to set up the necessary secrets in your GitHub repository.
 5.  **Enable GitHub Actions**:
     *   Go to the `Actions` tab and enable workflows.
     *   The mirror will automatically update according to your schedule, or you can trigger it manually via `workflow_dispatch`.
