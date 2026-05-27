@@ -14,10 +14,10 @@ jobs:
   update-mirror:
     runs-on: ubuntu-latest
     env:
-      TOOL_VERSION: v0.2.6
+      TOOL_VERSION: v0.2.9
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get current date
         run: echo "TODAY=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
@@ -55,7 +55,7 @@ jobs:
           ./mirror.sh "${{ env.TOOL_VERSION }}"
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: auto-update ${{ env.TODAY }} [skip ci]"
           file_pattern: 'docs/ metadata.yaml logs/'
