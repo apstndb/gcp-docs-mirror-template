@@ -2,17 +2,26 @@
 
 # Discovery entry points
 seeds = [
-    "https://cloud.google.com/YOUR_PRODUCT/docs",
-    "https://cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT"
+    "https://docs.cloud.google.com/YOUR_PRODUCT/docs",
+    "https://docs.cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT",
+    # Replace PRODUCT_PAGE_PATH with a product page confirmed to exist in the
+    # Developer Knowledge API, which may be YOUR_PRODUCT or products/YOUR_PRODUCT.
+    "https://cloud.google.com/PRODUCT_PAGE_PATH",
 ]
 
 # Path prefixes to mirror
-# Include both web documentation and gcloud CLI reference
+# Keep the documentation and product-site corpora distinct.
 prefixes = [
-    "/YOUR_PRODUCT/",
-    "/sdk/gcloud/reference/YOUR_PRODUCT/",
-    "/sdk/gcloud/reference/alpha/YOUR_PRODUCT/",
-    "/sdk/gcloud/reference/beta/YOUR_PRODUCT/"
+    "docs.cloud.google.com/YOUR_PRODUCT/",
+    "docs.cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT/",
+    "docs.cloud.google.com/sdk/gcloud/reference/alpha/YOUR_PRODUCT/",
+    "docs.cloud.google.com/sdk/gcloud/reference/beta/YOUR_PRODUCT/",
+    # Product pages are explicit seeds; keep only legacy documentation paths
+    # here so old links can self-correct through their HTTP redirects.
+    "cloud.google.com/YOUR_PRODUCT/docs/",
+    "cloud.google.com/sdk/gcloud/reference/YOUR_PRODUCT/",
+    "cloud.google.com/sdk/gcloud/reference/alpha/YOUR_PRODUCT/",
+    "cloud.google.com/sdk/gcloud/reference/beta/YOUR_PRODUCT/",
 ]
 
 # Sitemap URL(s) to discover links
@@ -26,3 +35,11 @@ recursive = true
 
 # Wait duration when quota is exceeded (default: 1m10s)
 # qw = "1m10s"
+
+# default_host is used for relative links and path-only prefixes.
+# Defaults to "docs.cloud.google.com". Set to "developers.google.com" or
+# another supported corpus host when mirroring outside Google Cloud docs.
+# default_host = "docs.cloud.google.com"
+
+# Use host-scoped prefixes when mirroring a non-default host:
+# prefixes = ["developers.google.com/YOUR_PRODUCT/"]
