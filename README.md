@@ -96,7 +96,7 @@ gh secret set DEVELOPERKNOWLEDGE_API_KEY --body "YOUR_API_KEY"
     *   Replace `PRODUCT_PAGE_PATH` with a product page that is present in the Developer Knowledge API (for example, `spanner` or `products/firestore`).
     *   Adjust `seeds` and `prefixes` as needed.
     *   Keep `docs.cloud.google.com` and `cloud.google.com` host-scoped prefixes separate. They are distinct API corpora; explicit product-page seeds are fetched even when they are outside the recursive prefixes, while narrow legacy documentation prefixes allow old links to follow their redirects without crawling unrelated product-site pages.
-    *   Product-page seeds require a `gcp-docs-mirror-tools` release newer than v0.2.9; bump `TOOL_VERSION` after that release is available.
+    *   Product-page seeds require `gcp-docs-mirror-tools` v0.3.0 or newer; the workflow currently pins v0.3.0.
 3.  **Adjust Update Schedule**:
     *   Edit `.github/workflows/update-mirror.yml`.
     *   **Crucial**: If you are maintaining multiple mirrors with the same API key, **offset the cron schedules** (e.g., `0 1 * * *`, `0 2 * * *`) to avoid simultaneous API requests that could exhaust your quota.
