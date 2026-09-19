@@ -28,6 +28,7 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
     --workload-identity-pool="github-pool" \
     --display-name="GitHub Actions Provider" \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.actor=assertion.actor" \
+    --attribute-condition="assertion.repository_owner_id == 'YOUR_GITHUB_OWNER_ID' && assertion.repository == 'YOUR_GITHUB_ORG/YOUR_GITHUB_REPO' && assertion.ref == 'refs/heads/main'" \
     --issuer-uri="https://token.actions.githubusercontent.com"
 
 # 3. Create a Service Account for the mirror tool
@@ -44,7 +45,7 @@ gcloud iam service-accounts add-iam-policy-binding "gcp-docs-mirror-sa@YOUR_PROJ
 ```
 
 > [!NOTE]
-> Ensure that the Service Account has permissions to call the Developer Knowledge API (no special IAM roles are generally required other than basic API enablement in the project, but you may grant standard viewer roles if querying other GCP resources).
+> Use a dedicated service account for public documentation retrieval. Do not add unrelated resource roles. Replace the owner ID with the numeric GitHub account ID; names alone can be reused after deletion.
 
 #### 2. Configure GitHub Secrets
 
@@ -96,7 +97,7 @@ gh secret set DEVELOPERKNOWLEDGE_API_KEY --body "YOUR_API_KEY"
     *   Replace `PRODUCT_PAGE_PATH` with a product page that is present in the Developer Knowledge API (for example, `spanner` or `products/firestore`).
     *   Adjust `seeds` and `prefixes` as needed.
     *   Keep `docs.cloud.google.com` and `cloud.google.com` host-scoped prefixes separate. They are distinct API corpora; explicit product-page seeds are fetched even when they are outside the recursive prefixes, while narrow legacy documentation prefixes allow old links to follow their redirects without crawling unrelated product-site pages.
-    *   Product-page seeds require `gcp-docs-mirror-tools` v0.3.0 or newer; the workflow currently pins v0.3.0.
+    *   Product-page seeds require `gcp-docs-mirror-tools` v0.3.0 or newer; the workflow currently pins v0.3.1.
 3.  **Adjust Update Schedule**:
     *   Edit `.github/workflows/update-mirror.yml`.
     *   **Crucial**: If you are maintaining multiple mirrors with the same API key, **offset the cron schedules** (e.g., `0 1 * * *`, `0 2 * * *`) to avoid simultaneous API requests that could exhaust your quota.
@@ -110,13 +111,25 @@ gh secret set DEVELOPERKNOWLEDGE_API_KEY --body "YOUR_API_KEY"
 
 The `gcp-docs-mirror-tools` is configured to respect quota limits, but simultaneous runs of multiple repositories will bypass these safety mechanisms. Always ensure that only one mirror update is running at any given time if they share the same API key.
 
+Workflow concurrency serializes updates within a repository; it does not serialize different repositories. Schedule offsets reduce overlap but are not a cross-repository lock.
+
+## Snapshot validation
+
+The script stages output under `.tmp/` and requires Python 3 for validation. It preserves the published snapshot if fetching or validation fails. Empty output, missing metadata/logs, newly observed failures, and document-count drops over 20% stop publication. Existing failures are compared with the checked-in `logs/failed.txt`; investigate them separately rather than treating them as proof of complete coverage. Count checks detect large regressions, not individual missing pages.
+
+After validation, the previous snapshot is retained under the staging directory's `previous/` folder. If promotion itself fails, the workflow stops without committing; recover from that backup before retrying locally. This is not a multi-directory atomic transaction. Review and explicitly clean retained `.tmp/` snapshots when no longer needed.
+
+For apstndb-owned `*-docs-mirror` repositories, the shared WIF provider already admits `main` through an owner-ID-checked mirror attribute. Configure the provider and service account repository settings; do not create another pool or add per-repository IAM bindings.
+
+Validation commands: `bash -n mirror.sh`, `python3 -m unittest discover -s scripts`, and `actionlint`.
+
 ## Manual Run
 
 If you have Go installed locally, you can run the mirror script manually:
 
 ```bash
 export DEVELOPERKNOWLEDGE_API_KEY=your_api_key
-./mirror.sh
+./mirror.sh v0.3.1
 ```
 
 ## Credits
